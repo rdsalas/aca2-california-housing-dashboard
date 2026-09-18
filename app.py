@@ -176,10 +176,29 @@ with tab_mapa:
     st.subheader("Distribución geográfica del error de predicción")
     map_data = test_predictions.rename(columns={"latitude": "lat", "longitude": "lon"}).copy()
     map_data["error_absoluto_usd"] = (map_data["valor_real_usd"] - map_data["valor_predicho_usd"]).abs()
-    st.map(map_data[["lat", "lon"]], size=20)
+
+    # Coloreamos y dimensionamos cada punto según su error: azul (bajo) a rojo (alto).
+    # Recortamos en el percentil 95 para que los pocos casos extremos del tope de
+    # USD 500.000 no aplasten la escala de color del resto de los puntos.
+    error_p95 = map_data["error_absoluto_usd"].quantile(0.95)
+    error_min = map_data["error_absoluto_usd"].min()
+
+    def error_a_color(valor: float) -> str:
+        rango = max(error_p95 - error_min, 1e-9)
+        t = max(0.0, min(1.0, (valor - error_min) / rango))
+        r = int(33 + t * (244 - 33))
+        g = int(150 + t * (67 - 150))
+        b = int(243 + t * (54 - 243))
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    map_data["color"] = map_data["error_absoluto_usd"].apply(error_a_color)
+    map_data["tamano_m"] = 600 + (map_data["error_absoluto_usd"].clip(upper=error_p95) / error_p95) * 3000
+
+    st.map(map_data, color="color", size="tamano_m")
     st.caption(
-        "Cada punto es un bloque censal del conjunto de prueba. La pestaña de desempeño "
-        "muestra el detalle numérico del error asociado."
+        "Cada punto es un bloque censal del conjunto de prueba; el color y el tamaño "
+        "representan el error absoluto (azul = bajo, rojo = alto). La pestaña de "
+        "desempeño muestra el detalle numérico."
     )
     st.dataframe(
         map_data[["lat", "lon", "valor_real_usd", "valor_predicho_usd", "error_absoluto_usd"]]
