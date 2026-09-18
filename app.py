@@ -65,6 +65,11 @@ tab_prediccion, tab_desempeno, tab_mapa = st.tabs(
 
 with tab_prediccion:
     st.subheader("Características del bloque censal")
+    st.caption(
+        "Estos valores describen un bloque censal completo, no una sola vivienda "
+        "(así está definido el dataset original): `total_rooms`, `total_bedrooms`, "
+        "`population` y `households` son sumas de todas las viviendas del bloque."
+    )
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -73,16 +78,45 @@ with tab_prediccion:
         housing_median_age = st.slider("Antigüedad mediana de la vivienda (años)", 1, 52, 29)
 
     with col2:
-        total_rooms = st.number_input("Total de habitaciones", min_value=1, value=2635)
-        total_bedrooms = st.number_input("Total de dormitorios", min_value=1, value=538)
-        population = st.number_input("Población", min_value=1, value=1425)
+        total_rooms = st.number_input("Total de habitaciones", min_value=1, max_value=40_000, value=2635)
+        total_bedrooms = st.number_input("Total de dormitorios", min_value=1, max_value=6_500, value=538)
+        population = st.number_input("Población", min_value=1, max_value=36_000, value=1425)
 
     with col3:
-        households = st.number_input("Hogares", min_value=1, value=500)
+        households = st.number_input("Hogares", min_value=1, max_value=6_100, value=500)
         median_income = st.slider("Ingreso mediano (decenas de miles de USD)", 0.5, 15.0, 3.87, 0.01)
         ocean_proximity = st.selectbox("Proximidad al océano", ocean_categories)
 
-    if st.button("Predecir valor de la vivienda", type="primary"):
+    # Coherencia entre las variables agregadas: verificamos antes de predecir, no después.
+    errores_coherencia = []
+    if total_bedrooms > total_rooms:
+        errores_coherencia.append(
+            f"Los dormitorios ({total_bedrooms:,}) no pueden superar el total de habitaciones ({total_rooms:,})."
+        )
+    if households > population:
+        errores_coherencia.append(
+            f"No puede haber más hogares ({households:,}) que personas ({population:,})."
+        )
+
+    personas_por_hogar = population / households
+    dormitorios_por_habitacion = total_bedrooms / total_rooms
+    habitaciones_por_hogar = total_rooms / households
+
+    info_col1, info_col2, info_col3 = st.columns(3)
+    info_col1.metric("Personas por hogar", f"{personas_por_hogar:.2f}")
+    info_col2.metric("Habitaciones por hogar", f"{habitaciones_por_hogar:.2f}")
+    info_col3.metric("Dormitorios / habitaciones", f"{dormitorios_por_habitacion:.0%}")
+    st.caption(
+        "Como referencia, en el dataset original estos valores suelen rondar "
+        "2-4 personas por hogar, 4-7 habitaciones por hogar y 15-20% de dormitorios sobre el total de habitaciones."
+    )
+
+    if errores_coherencia:
+        for mensaje in errores_coherencia:
+            st.warning(mensaje)
+        st.button("Predecir valor de la vivienda", type="primary", disabled=True)
+        st.caption("Corrige los valores señalados arriba para habilitar la predicción.")
+    elif st.button("Predecir valor de la vivienda", type="primary"):
         input_row = {
             "longitude": longitude,
             "latitude": latitude,
