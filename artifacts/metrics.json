@@ -1,0 +1,16 @@
+{
+  "target_scale": 100000,
+  "regresion_lineal_aca1": {
+    "r2_train": 0.6456,
+    "r2_test": 0.6488,
+    "rmse_test_usd": 69297.7167,
+    "mae_test_usd": 50413.4333
+  },
+  "red_neuronal_aca2": {
+    "r2_train": 0.8483712150387959,
+    "r2_test": 0.8069886936523584,
+    "rmse_test_usd": 51375.719051468535,
+    "mae_test_usd": 34493.96909503456,
+    "epocas_entrenadas": 156
+  }
+}
