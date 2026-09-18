@@ -10,28 +10,39 @@ import json
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
 import streamlit as st
-import tensorflow as tf
 
 st.set_page_config(page_title="ACA 2 - California Housing (Red Neuronal)", layout="wide")
 
 ARTIFACTS_DIR = Path(__file__).parent / "artifacts"
 
 
+def mlp_predict(X, weights):
+    """Reproduce el forward-pass del MLP (128-64-32-1, ReLU) entrenado en el
+    notebook con Keras/TensorFlow, usando solo NumPy. El Dropout no aparece
+    aquí porque es un no-op en inferencia (equivalente a `model.predict`)."""
+    h = np.maximum(X @ weights["W1"] + weights["b1"], 0)
+    h = np.maximum(h @ weights["W2"] + weights["b2"], 0)
+    h = np.maximum(h @ weights["W3"] + weights["b3"], 0)
+    out = h @ weights["W4"] + weights["b4"]
+    return out.flatten()
+
+
 @st.cache_resource
 def load_artifacts():
-    model = tf.keras.models.load_model(ARTIFACTS_DIR / "mlp_housing_model.keras")
+    weights = dict(np.load(ARTIFACTS_DIR / "mlp_weights.npz"))
     scaler = joblib.load(ARTIFACTS_DIR / "scaler.pkl")
     feature_columns = json.loads((ARTIFACTS_DIR / "feature_columns.json").read_text(encoding="utf-8"))
     ocean_categories = json.loads((ARTIFACTS_DIR / "ocean_categories.json").read_text(encoding="utf-8"))
     metrics = json.loads((ARTIFACTS_DIR / "metrics.json").read_text(encoding="utf-8"))
     test_predictions = pd.read_csv(ARTIFACTS_DIR / "test_predictions.csv")
-    return model, scaler, feature_columns, ocean_categories, metrics, test_predictions
+    return weights, scaler, feature_columns, ocean_categories, metrics, test_predictions
 
 
 try:
-    model, scaler, feature_columns, ocean_categories, metrics, test_predictions = load_artifacts()
+    weights, scaler, feature_columns, ocean_categories, metrics, test_predictions = load_artifacts()
 except FileNotFoundError:
     st.error(
         "No se encontraron los artefactos del modelo. Ejecuta primero el notebook "
@@ -87,7 +98,7 @@ with tab_prediccion:
 
         input_df = pd.DataFrame([input_row]).reindex(columns=feature_columns, fill_value=0)
         input_scaled = scaler.transform(input_df)
-        prediction_scaled = model.predict(input_scaled, verbose=0).flatten()[0]
+        prediction_scaled = mlp_predict(input_scaled, weights)[0]
         prediction_usd = prediction_scaled * TARGET_SCALE
 
         st.metric("Valor estimado de la vivienda", f"USD {prediction_usd:,.0f}")
