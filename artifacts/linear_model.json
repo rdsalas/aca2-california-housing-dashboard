@@ -1,0 +1,33 @@
+{
+  "feature_columns": [
+    "longitude",
+    "latitude",
+    "housing_median_age",
+    "total_rooms",
+    "total_bedrooms",
+    "population",
+    "households",
+    "median_income",
+    "ocean_proximity_<1H OCEAN",
+    "ocean_proximity_INLAND",
+    "ocean_proximity_ISLAND",
+    "ocean_proximity_NEAR BAY",
+    "ocean_proximity_NEAR OCEAN"
+  ],
+  "coefficients": [
+    -27108.74632117851,
+    -25657.807542676084,
+    1081.3642062733395,
+    -6.322145519678014,
+    103.00404177119044,
+    -36.40975136879562,
+    43.14272491811378,
+    39277.08301971288,
+    12882.516244107386,
+    -26357.701534367603,
+    226535.8907069273,
+    6650.099367870422,
+    16048.993372345225
+  ],
+  "intercept": -2312156.2783475094
+}
